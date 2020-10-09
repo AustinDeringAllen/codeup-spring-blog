@@ -5,38 +5,79 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class PostController {
+    private final PostRepository postRepo;
 
-    @RequestMapping(path="/posts", method = RequestMethod.GET)
-    public String postIndex(Model model) {
-        ArrayList<Post> posts = new ArrayList<>();
-        for(int i=0; i<2; i++) {
-            Post post = new Post("Post " + i, "This is post " + i);
-            posts.add(post);
+    public PostController(PostRepository postRepo) {
+        this.postRepo = postRepo;
+    }
+
+    @RequestMapping(path = "/posts", method = RequestMethod.GET)
+    public String showAllPosts(Model model) {
+        model.addAttribute("posts", postRepo.findAll());
+        return "posts/index";
+    }
+
+    @GetMapping("/posts/{id}")
+    public String showOnePost(@PathVariable long id, Model model) {
+        Post post = postRepo.getAdById(id);
+        model.addAttribute("post", post);
+        return "posts/show";
+    }
+
+    @RequestMapping(path = "/posts/create", method = RequestMethod.GET)
+    public String createPostForm() {
+        return "posts/create";
+    }
+
+    @RequestMapping(path = "/posts/create", method = RequestMethod.POST)
+    public String createPost(@RequestParam(name = "title") String title,
+                             @RequestParam(name = "body") String body,
+                             Model model) {
+        Post post = new Post();
+        post.setTitle(title);
+        post.setBody(body);
+        postRepo.save(post);
+        return "redirect:/posts/" + post.getId();
+    }
+
+
+    @GetMapping("/posts/delete/{id}")
+    public String deletePost(@PathVariable long id, Model model) {
+        Post post = postRepo.getAdById(id);
+        if (post != null) {
+            postRepo.delete(post);
         }
-
-        model.addAttribute("posts",posts);
-        return "/posts/index";
+        return "redirect:/posts";
     }
 
-    @RequestMapping(path="/posts/{id}", method = RequestMethod.GET)
-    public String individualPost(@PathVariable long id, Model model) {
-        Post post = new Post("I miss you", "I miss the good old days");
-        model.addAttribute("post",post);
-        return "/posts/show";
+
+    @GetMapping("/posts/edit/{id}")
+    public String showEditPost(@PathVariable long id, Model model) {
+        Post post = postRepo.getAdById(id);
+        if (post == null) {
+            return "redirect:/posts/index";
+        }
+        model.addAttribute("post", post);
+        return "posts/edit";
     }
 
-    @RequestMapping(path="/posts/create", method = RequestMethod.GET)
-    @ResponseBody
-    public String postForm() {
-        return "view the form for creating a post";
-    }
 
-    @RequestMapping(path="/posts", method = RequestMethod.POST)
-    @ResponseBody
-    public String createPost() {
-        return "create a new post";
+    @PostMapping("/posts/edit")
+    public String updatePost(@RequestParam(name = "id") long id,
+                             @RequestParam(name = "title") String title,
+                             @RequestParam(name = "body") String body,
+                             Model model) {
+        Post post = postRepo.getAdById(id);
+        if (post == null) {
+            return "redirect:/posts/index";
+        }
+        post.setTitle(title);
+        post.setBody(body);
+        postRepo.save(post);
+        return "redirect:/posts/" + post.getId();
     }
 }
