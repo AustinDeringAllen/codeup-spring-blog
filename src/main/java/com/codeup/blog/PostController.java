@@ -1,20 +1,20 @@
 package com.codeup.blog;
 
-import org.mindrot.jbcrypt.BCrypt;
+import com.codeup.blog.services.EmailService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 @Controller
 public class PostController {
     private final PostRepository postRepo;
     private final UserRepository userRepo;
+    private final EmailService emailService;
 
-    public PostController(PostRepository postRepo, UserRepository userRepo) {
+    public PostController(PostRepository postRepo, UserRepository userRepo, EmailService emailService) {
         this.postRepo = postRepo;
         this.userRepo = userRepo;
+        this.emailService = emailService;
     }
 
     @RequestMapping(path = "/posts", method = RequestMethod.GET)
@@ -38,8 +38,9 @@ public class PostController {
 
     @RequestMapping(path = "/posts/create", method = RequestMethod.POST)
     public String createPost(@ModelAttribute Post post) {
-        post.setUser(userRepo.getOne(2L));
+        post.setUser(userRepo.getOne(3L));
         postRepo.save(post);
+        emailService.prepareAndSend(post,"Email Created","Congratulations! Your post has been created!");
         return "redirect:/posts/";
     }
 
